@@ -1,0 +1,51 @@
+version: '2.1'
+
+orbs:
+  helm: circleci/helm@2.0.1
+
+jobs:
+  deploy:
+    parameters:
+      cluster_id:
+        type: string
+        default: ""
+      google_compute_zone:
+        type: string
+        default: us-west3
+      google_project_id:
+        type: string
+        default: dev-slatscale
+    docker:
+      - image: cimg/base:2022.10
+    steps:
+      - checkout
+      # Installs the gcloud util
+      - run: sudo apt update
+      - run: sudo apt-get install apt-transport-https ca-certificates gnupg
+      - run: echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+      - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+      - run: sudo apt-get update && sudo apt-get install google-cloud-cli -y
+      - run: sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin -y
+      - run: sudo apt-get install kubectl -y
+
+      # Install Helm
+      - run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      # Configure gcloud auth
+      - run: echo $GOOGLE_CREDENTIALS | gcloud auth activate-service-account --key-file=-
+      - run: gcloud --quiet config set project << parameters.google_project_id >>
+      - run: gcloud --quiet config set compute/zone << parameters.google_compute_zone >>
+      - run: gcloud container clusters get-credentials << parameters.cluster_id >>
+
+      - run: helm repo add linkerd https://helm.linkerd.io/stable
+      - run: helm repo update
+      - run: helm upgrade -i --namespace linkerd --create-namespace linkerd-control-plane linkerd/linkerd-control-plane -f values.yaml --atomic
+
+workflows:
+  version: 2
+
+  "Deploy Development":
+    jobs:
+      - deploy:
+          name: Deploy to Development
+          cluster_id: eng-development
