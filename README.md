@@ -68,7 +68,9 @@ You can also run kubectl apply to the given certificate file conveniently provid
 
 Just because you installed it, doesn't mean the services are using it or configured to do so. This is done on a per namespace basis.
 
-To do so you simple run `kubectl annotate <created-namespace> "linkerd.io/inject=enabled"`
+To do so you simple run `kubectl annotate namespace <created-namespace> "linkerd.io/inject=enabled"`
+
+Example: `kubectl annotate namespace services "linkerd.io/inject=enabled"`
 
 #### Reference
 https://linkerd.io/2.12/features/proxy-injection/
