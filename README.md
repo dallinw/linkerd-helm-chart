@@ -50,13 +50,19 @@ This `step` command will spit out two files into your current directory, the cer
 
 You can then install the app like so.
 
+Note the run as root override, this is needed for local development otherwise it is not needed.
+
 ```
+helm fetch --untar linkerd/linkerd-control-plane && \
 helm upgrade -i \
     --namespace linkerd \
     --create-namespace \
     linkerd-control-plane \
     linkerd/linkerd-control-plane \
-    -f values.yaml \
+    --set-file identityTrustAnchorsPEM=ca.crt \
+    --set identity.issuer.scheme=kubernetes.io/tls \
+    -f linkerd-control-plane/values-ha.yaml \
+    -f values.yaml
     --atomic
 ```
 

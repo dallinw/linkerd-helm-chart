@@ -1,0 +1,2 @@
+proxyInit:
+  runAsRoot: true
