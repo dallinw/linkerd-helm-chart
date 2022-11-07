@@ -28,7 +28,7 @@ helm install \
     --version v1.10.0 \
     --set installCRDs=true
 ```
-Afterworks when we have this baseline automation in place, we begin by installing the Linkerd kubernetes custom resource definitions. It is a single command install.
+Afterwords when we have this baseline automation in place, we begin by installing the Linkerd kubernetes custom resource definitions. It is a single command install.
 
 ```
 helm install linkerd-crds linkerd/linkerd-crds -n linkerd --create-namespace 
@@ -52,6 +52,7 @@ You can then install the app like so.
 
 Note the run as root override, this is needed for local development otherwise it is not needed.
 
+HA Setup
 ```
 helm fetch --untar linkerd/linkerd-control-plane && \
 helm upgrade -i \
@@ -62,6 +63,21 @@ helm upgrade -i \
     --set-file identityTrustAnchorsPEM=ca.crt \
     --set identity.issuer.scheme=kubernetes.io/tls \
     -f linkerd-control-plane/values-ha.yaml \
+    -f values.yaml
+    --atomic
+```
+
+Local Setup
+
+```
+helm fetch --untar linkerd/linkerd-control-plane && \
+helm upgrade -i \
+    --namespace linkerd \
+    --create-namespace \
+    linkerd-control-plane \
+    linkerd/linkerd-control-plane \
+    --set-file identityTrustAnchorsPEM=ca.crt \
+    --set identity.issuer.scheme=kubernetes.io/tls \
     -f values.yaml
     --atomic
 ```
@@ -77,6 +93,17 @@ Just because you installed it, doesn't mean the services are using it or configu
 To do so you simple run `kubectl annotate namespace <created-namespace> "linkerd.io/inject=enabled"`
 
 Example: `kubectl annotate namespace services "linkerd.io/inject=enabled"`
+
+If you want to use the viz dashboard,
+
+`kubectl annotate namespace linkerd "linkerd.io/inject=enabled"`
+
+Then install the viz dashboard
+
+`helm install linkerd-viz linkerd/linkerd-viz`
+
+To port forward and view dashboard: `linkerd viz dashboard`
+
 
 #### Reference
 https://linkerd.io/2.12/features/proxy-injection/
