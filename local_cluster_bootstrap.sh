@@ -49,6 +49,8 @@ linkerd-trust-anchor \
 # Apply the special linkerd to cert manager tie-in
 kubectl apply -f setup/certificates.yaml
 
+sleep 5
+
 helm fetch --untar linkerd/linkerd-control-plane && \
 helm upgrade -i \
     --namespace linkerd \
@@ -60,10 +62,14 @@ helm upgrade -i \
     -f values.yaml \
     --atomic
 
+sleep 5
+
 # Linkerd Dashboard
 kubectl create namespace linkerd-viz
 kubectl annotate namespace linkerd-viz "linkerd.io/inject=enabled" --overwrite
 helm upgrade -i linkerd-viz linkerd/linkerd-viz --namespace linkerd-viz
+
+sleep 5
 
 # Ambassador ingress
 helm repo add datawire https://app.getambassador.io
