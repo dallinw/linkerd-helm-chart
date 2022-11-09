@@ -90,3 +90,7 @@ datawire/edge-stack \
 kubectl create namespace services
 kubectl annotate namespace services "linkerd.io/inject=enabled" --overwrite
 kubectl config set-context --current --namespace=services
+
+rm -Rf linkerd-control-plane
+rm ca.key
+rm ca.crt
