@@ -6,39 +6,26 @@
 kubectl config use-context docker-desktop
 
 # Prep, delete old data if it exists
-kubectl delete namespace linkerd
-kubectl delete namespace ambassador
 kubectl delete namespace services
+kubectl delete namespace linkerd
 kubectl delete namespace linkerd-viz
+kubectl delete namespace ambassador
+kubectl delete namespace emissary-system
+kubectl delete namespace cert-manager
 
 # remove temp files, if they exist
 rm -Rf linkerd-control-plane
 rm ca.key
 rm ca.crt
 
-# Ambassador ingress
-helm repo add datawire https://app.getambassador.io
-helm repo update
-
-# Create the namespace, and the remote CRD's have coded inside namespace designators.
-kubectl create namespace ambassador
-kubectl apply -f https://app.getambassador.io/yaml/edge-stack/latest/aes-crds.yaml
-
-# Brittle but works for local so it's all good, goes up and over to the ambassador project
-helm upgrade -i edge-stack \
---namespace ambassador \
-datawire/edge-stack \
---set emissary-ingress.createDefaultListeners=true \
---set emissary-ingress.agent.cloudConnectToken=$AMBASSADOR_CLOUD_TOKEN \
--f ../ambassador-helm-chart/values.yaml
-
 # Cert manager, used for intra-service mTLS
+kubectl create namespace cert-manager
+
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 helm upgrade -i \
 cert-manager jetstack/cert-manager \
 --namespace cert-manager \
---create-namespace \
 --version v1.10.0 \
 --set installCRDs=true
 
@@ -74,7 +61,35 @@ helm upgrade -i \
     --atomic
 
 # Linkerd Dashboard
-helm upgrade -i linkerd-viz linkerd/linkerd-viz --namespace linkerd-viz --create-namespace
+kubectl create namespace linkerd-viz
+kubectl annotate namespace linkerd-viz "linkerd.io/inject=enabled" --overwrite
+helm upgrade -i linkerd-viz linkerd/linkerd-viz --namespace linkerd-viz
+
+# Ambassador ingress
+helm repo add datawire https://app.getambassador.io
+helm repo update
+
+# Create the namespace, and the remote CRD's have coded inside namespace designators.
+kubectl create namespace ambassador
+kubectl annotate namespace ambassador "linkerd.io/inject=enabled" --overwrite
+
+kubectl create namespace emissary-system
+kubectl annotate namespace emissary-system "linkerd.io/inject=enabled" --overwrite
+
+kubectl apply -f https://app.getambassador.io/yaml/edge-stack/latest/aes-crds.yaml
+
+# Brittle but works for local so it's all good, goes up and over to the ambassador project
+helm upgrade -i edge-stack \
+--namespace ambassador \
+datawire/edge-stack \
+--set emissary-ingress.createDefaultListeners=true \
+--set emissary-ingress.agent.cloudConnectToken=$AMBASSADOR_CLOUD_TOKEN \
+-f ../ambassador-helm-chart/values.yaml
+
+kubectl annotate namespace cert-manager "linkerd.io/inject=enabled" --overwrite
+kubectl rollout restart deployment cert-manager --namespace cert-manager
+kubectl rollout restart deployment cert-manager-cainjector --namespace cert-manager
+kubectl rollout restart deployment cert-manager-webhook --namespace cert-manager
 
 # Post config
 kubectl create namespace services
