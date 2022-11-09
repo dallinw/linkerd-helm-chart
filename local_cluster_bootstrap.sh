@@ -86,11 +86,6 @@ datawire/edge-stack \
 --set emissary-ingress.agent.cloudConnectToken=$AMBASSADOR_CLOUD_TOKEN \
 -f ../ambassador-helm-chart/values.yaml
 
-kubectl annotate namespace cert-manager "linkerd.io/inject=enabled" --overwrite
-kubectl rollout restart deployment cert-manager --namespace cert-manager
-kubectl rollout restart deployment cert-manager-cainjector --namespace cert-manager
-kubectl rollout restart deployment cert-manager-webhook --namespace cert-manager
-
 # Post config
 kubectl create namespace services
 kubectl annotate namespace services "linkerd.io/inject=enabled" --overwrite
